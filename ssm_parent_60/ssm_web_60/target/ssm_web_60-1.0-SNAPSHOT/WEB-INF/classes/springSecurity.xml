@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			    http://www.springframework.org/schema/beans/spring-beans.xsd
+			    http://www.springframework.org/schema/context
+			    http://www.springframework.org/schema/context/spring-context.xsd
+			    http://www.springframework.org/schema/aop
+			    http://www.springframework.org/schema/aop/spring-aop.xsd
+			    http://www.springframework.org/schema/tx
+			    http://www.springframework.org/schema/tx/spring-tx.xsd
+			    http://www.springframework.org/schema/mvc
+			    http://www.springframework.org/schema/mvc/spring-mvc.xsd
+               http://www.springframework.org/schema/security
+			    http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!--释放静态资源 放行未登录就能访问的页面-->
+    <security:http pattern="/login.jsp" security="none"/>
+    <security:http pattern="/failer.jsp" security="none"/>
+    <security:http pattern="/css/**" security="none"/>
+    <security:http pattern="/img/**" security="none"/>
+    <security:http pattern="/plugins/**" security="none"/>
+    <!--
+        <security:http 标签是springsecurity的主标签
+        auto-config="true" 表示让springsecurity自动去寻找认证页面
+        如果我们自己提供了认证页面，就用我们自己的，如果我们没有提供，则用springsecurity提供的。
+        use-expressions="true" 表示使用spring的el表达式来进行权限配置。
+    -->
+    <security:http auto-config="true" use-expressions="true">
+        <!--
+            <security:intercept-url 标签是用来拦截请求的url的
+            pattern="/**" 表示要拦截哪些路径 /**表示什么都拦截
+            access 表示拦截的url资源需要什么角色才能访问
+            access="hasAnyRole('ROLE_USER')"
+                其中hasAnyRole是spring的el表达式
+                ROLE_USER表示角色名称，其实springsecurity要求角色名必须以ROLE_开头，
+                后面可以随意，一般都是大写，不能有中文。
+                这里面放置的角色一般称为基本角色。
+        -->
+        <!--权限框架支持多角色登录-->
+        <security:intercept-url pattern="/**" access="ROLE_USER，ROLE_ADMIN，ROLE_PRODUCT，ROLE_PRDER"/>
+        <!--提供认证相关信息-->
+        <!--
+         login-page="" 当然自定义的认证页面地址
+         login-processing-url="" 认证的处理器地址
+         default-target-url="" 认证通过后默认跳转的页面
+         authentication-failure-url="" 认证失败跳转的页面
+        -->
+        <security:form-login login-page="/login.jsp"
+                             login-processing-url="/login"
+                             default-target-url="/index.jsp"
+                             authentication-failure-url="/failer.jsp"/>
+
+         <!--登录成功权限不足的处理-->
+        <security:access-denied-handler error-page="/403.jsp"></security:access-denied-handler>
+
+        <!--提供退出认证相关信息-->
+        <!--
+         invalidate-session="true"  清空session
+         logout-url="/logout"  退出认证的请求url地址
+         logout-success-url="/login.jsp"  退出成功后跳转的页面
+        -->
+        <security:logout invalidate-session="true"
+                         logout-url="/logout"
+                         logout-success-url="/login.jsp"/>
+        <!--关闭 跨域请求的攻击csrf拦截-->
+        <security:csrf disabled="true"/>
+    </security:http>
+
+    <!--指定认证用户信息的来源-->
+    <!--暂时先在内容中放置两个用户-->
+    <!--
+        在内存中放了两个用户
+        一个是user密码也是user角色是ROLE_USER
+        一个是admin密码也是admin角色ROLE_ADMIN
+    -->
+    <security:authentication-manager>
+        <!--user-service-ref参数为自定义的userService的id,通过在service接口实现类上的@Service注解实现-->
+        <security:authentication-provider user-service-ref="userService">
+        <!--读取数据库的真实用户验证账号密码是否正确
+        配置自定义的userService实现类被框架使用
+        判断规则为：userService必须继承框架的接口UserDetailsService
+        目的是复写方法loadUserByUserName 通过用户名查询数据库的用户-->
+            <!--加密工具类id的引入 告诉框架使用的是什么加密方式-->
+            <security:password-encoder ref="pwdEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!--通过配置文件的方式初始化加密的工具类-->
+     <bean id="pwdEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+</beans>
