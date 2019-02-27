@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			    http://www.springframework.org/schema/beans/spring-beans.xsd
+			    http://www.springframework.org/schema/context
+			    http://www.springframework.org/schema/context/spring-context.xsd
+			    http://www.springframework.org/schema/aop
+			    http://www.springframework.org/schema/aop/spring-aop.xsd
+			    http://www.springframework.org/schema/tx
+			    http://www.springframework.org/schema/tx/spring-tx.xsd
+			    http://www.springframework.org/schema/mvc
+			    http://www.springframework.org/schema/mvc/spring-mvc.xsd
+               http://www.springframework.org/schema/security
+			    http://www.springframework.org/schema/security/spring-security.xsd">
+    <!--释放静态资源-->
+    <security:http pattern="/login.jsp" security="none"/>
+    <security:http pattern="/failer.jsp" security="none"/>
+    <!--配置拦截器的路径规则-->
+    <!--auto-config="true" 使用框架默认配置-->
+    <!--use-expressions="false" 关闭权限框架的表达式spel-->
+    <!--intercept-url拦截请求资源的路径-->
+    <!--access允许访问的条件-->
+    <security:http auto-config="true" use-expressions="true">
+        <security:intercept-url pattern="/**" access="hasAnyRole('ROLE_USER')"></security:intercept-url>
+        <!--自定义页面-->
+        <!--login-page自定义的认证页面地址-->
+        <!--login-processing-url认证的处理器地址 需要和from表单的请求地址一致-->
+        <!--default-target-url默认登录成功后的指向页面-->
+        <!--authentication-failure-forward-url登录失败的指向页面-->
+        <security:form-login login-page="/login.jsp"
+                             login-processing-url="/login"
+                             default-target-url="/success.jsp"
+                             authentication-failure-forward-url="/failer.jsp"></security:form-login>
+        <!--登录成功权限不足的处理-->
+        <security:access-denied-handler error-page="/403.jsp"></security:access-denied-handler>
+        <!--csrf关闭跨域请求的攻击-->
+        <!--提供退出认证相关信息-->
+        <!--
+         invalidate-session="true"  清空session
+         logout-url="/logout"  退出认证的请求url地址
+         logout-success-url="/login.jsp"  退出成功后跳转的页面
+        -->
+        <security:logout invalidate-session="true"
+                         logout-url="/logout"
+                         logout-success-url="/login.jsp"/>
+        <!--关闭csrf拦截-->
+
+         <security:csrf disabled="true"></security:csrf>
+
+    </security:http>
+    <!--配置拦截后验证的节点-->
+    <security:authentication-manager>
+        <security:authentication-provider>
+            <!--测试使用框架提供的默认的user业务类验证权限-->
+            <security:user-service>
+                <!--自定义测试的用户名和密码
+                {noop}指的是明文方式验证 密文指的是加密后的字符串-->
+                <security:user name="admin" password="{noop}admin" authorities="ROLE_ADMIN"></security:user>
+                <security:user name="user" password="{noop}user" authorities="ROLE_USER"></security:user>
+            </security:user-service>
+        </security:authentication-provider>
+    </security:authentication-manager>
+</beans>
+
+
+
